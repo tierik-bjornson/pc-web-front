@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        NODE_VERSION = '18'
+        NODE_VERSION = '18' // Chỉ để tham khảo
         ADMIN_PATH = 'admin'
         USER_PATH = 'user'
     }
@@ -11,7 +11,8 @@ pipeline {
         stage('Preparation') {
             steps {
                 echo 'Kiểm tra NodeJS environment...'
-                tool name: 'NodeJS', version: "${env.NODE_VERSION}"
+                // Sử dụng tên 'node18' đã cấu hình trong Jenkins
+                tool name: 'Node18'
                 sh 'node --version'
                 sh 'npm --version'
             }
@@ -76,11 +77,9 @@ pipeline {
                 echo 'Deploying applications...'
                 dir("${env.ADMIN_PATH}/dist") {
                     echo 'Deploying admin frontend...'
-                    // Thêm lệnh deploy thực tế, ví dụ: sh 'aws s3 sync . s3://admin-bucket'
                 }
                 dir("${env.USER_PATH}/dist") {
                     echo 'Deploying user frontend...'
-                    // Thêm lệnh deploy thực tế, ví dụ: sh 'aws s3 sync . s3://user-bucket'
                 }
             }
         }
