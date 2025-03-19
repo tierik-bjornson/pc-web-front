@@ -32,12 +32,12 @@ pipeline {
                 script {
                     def directories = ['admin/src', 'user/src']
                     for (dir in directories) {
-                        echo "📦 Cài đặt dependencies cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
+                                echo "📦 Cài đặt dependencies trong ${dir}..."
                                 sh 'npm install'
                             } else {
-                                echo "⚠ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua."
+                                echo "⚠ Không tìm thấy package.json trong ${dir}, bỏ qua cài đặt."
                             }
                         }
                     }
@@ -50,12 +50,12 @@ pipeline {
                 script {
                     def directories = ['admin/src', 'user/src']
                     for (dir in directories) {
-                        echo "🏗 Bắt đầu build cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
+                                echo "🏗 Build dự án trong ${dir}..."
                                 sh 'npm run build --prod'
                             } else {
-                                echo "⚠ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua build."
+                                echo "⚠ Không tìm thấy package.json trong ${dir}, bỏ qua build."
                             }
                         }
                     }
@@ -68,16 +68,16 @@ pipeline {
                 script {
                     def directories = ['admin/src', 'user/src']
                     for (dir in directories) {
-                        echo "🧪 Chạy test cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
-                                sh 'npm run test || echo "⚠ Không có test nào được chỉ định, bỏ qua..."'
+                                echo "🧪 Chạy test trong ${dir}..."
+                                sh 'npm run test || echo "⚠ Không có test nào, bỏ qua..."'
                             } else {
-                                echo "⚠ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua test."
+                                echo "⚠ Không tìm thấy package.json trong ${dir}, bỏ qua test."
                             }
                         }
                     }
-                    echo "✅ Test xong!"
+                    echo "✅ Test hoàn tất!"
                 }
             }
         }
@@ -93,7 +93,7 @@ pipeline {
     }
     post {
         success {
-            echo '🎉 Build và push lên Harbor thành công! Repo deploy đã được cập nhật.'
+            echo '🎉 Build và push lên Harbor thành công!'
         }
         failure {
             echo '❌ Build thất bại. Kiểm tra logs để xem chi tiết.'
