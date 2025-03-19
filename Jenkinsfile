@@ -1,114 +1,81 @@
 pipeline {
     agent any
-    tools {
-        nodejs "Node18"
-    }
+
     environment {
-        REGISTRY = 'localhost:80'
-        PROJECT = 'pc-web-front'
-        IMAGE_NAME = 'pc-web-front-image'
-        HARBOR_CREDS = 'harbor-credentials'
-        DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
+        NODE_VERSION = '18' // Chỉnh phiên bản Node.js phù hợp với project
     }
+
     stages {
-        stage('Start') {
+        stage('Checkout Code') {
             steps {
                 script {
-                    echo "🚀 Pipeline bắt đầu chạy!"
+                    checkout scm
                 }
             }
         }
-        stage('Checkout Source Code') {
+
+        stage('Setup Node.js') {
             steps {
                 script {
-                    echo "📥 Đang clone repository source code..."
-                    git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main'
-                    echo "✅ Clone source code thành công!"
-                    
-                    // Kiểm tra thư mục sau khi clone
-                    sh 'ls -la'
+                    def nodeInstalled = sh(script: 'node -v || echo "not installed"', returnStdout: true).trim()
+                    if (nodeInstalled == "not installed") {
+                        sh "nvm install ${NODE_VERSION}"
+                        sh "nvm use ${NODE_VERSION}"
+                    }
                 }
             }
         }
-        stage('Check package.json') {
-            steps {
-                script {
-                    echo "🔍 Kiểm tra package.json trong admin và user..."
-                    sh 'ls -la admin/ | grep package.json || echo "❌ Không tìm thấy package.json trong admin"'
-                    sh 'ls -la user/ | grep package.json || echo "❌ Không tìm thấy package.json trong user"'
-                }
-            }
-        }
+
         stage('Install Dependencies') {
             steps {
-                script {
-                    def directories = ['admin', 'user']
-                    for (dir in directories) {
-                        echo "📦 Cài đặt dependencies cho ${dir}..."
-                        dir("${dir}") {
-                            if (fileExists('package.json')) {
-                                sh 'npm install'
-                            } else {
-                                echo "❌ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua!"
-                            }
-                        }
-                    }
-                    echo "✅ Cài đặt dependencies hoàn tất!"
+                dir('admin/src') {
+                    sh 'npm install'
+                }
+                dir('user/src') {
+                    sh 'npm install'
                 }
             }
         }
-        stage('Build') {
+
+        stage('Build Angular Apps') {
             steps {
-                script {
-                    def directories = ['admin', 'user']
-                    for (dir in directories) {
-                        echo "🛠️ Bắt đầu build cho ${dir}..."
-                        dir("${dir}") {
-                            if (fileExists('package.json')) {
-                                sh 'npm run build --prod'
-                            } else {
-                                echo "❌ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua build!"
-                            }
-                        }
-                    }
-                    echo "✅ Build hoàn tất!"
+                dir('admin/src') {
+                    sh 'npm run build -- --output-path=dist/admin'
+                }
+                dir('user/src') {
+                    sh 'npm run build -- --output-path=dist/user'
                 }
             }
         }
-        stage('Test') {
+
+        stage('Run Tests') {
             steps {
-                script {
-                    def directories = ['admin', 'user']
-                    for (dir in directories) {
-                        echo "🧪 Chạy test cho ${dir}..."
-                        dir("${dir}") {
-                            if (fileExists('package.json')) {
-                                sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
-                            } else {
-                                echo "❌ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua test!"
-                            }
-                        }
-                    }
-                    echo "✅ Test hoàn tất!"
+                dir('admin/src') {
+                    sh 'npm test'
+                }
+                dir('user/src') {
+                    sh 'npm test'
                 }
             }
         }
-        stage('Cleanup') {
+
+        stage('Deploy') {
             steps {
-                script {
-                    echo "🗑️ Dọn dẹp Docker image..."
-                    sh "docker rmi ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
-                    echo "✅ Dọn dẹp hoàn tất!"
-                }
+                echo 'Deploying Angular Apps...'
+                // Thêm lệnh deploy tùy theo cách bạn triển khai, ví dụ:
+                // scp -r admin/src/dist/admin user@server:/var/www/admin
+                // scp -r user/src/dist/user user@server:/var/www/user
             }
         }
     }
+
     post {
         success {
-            echo '🎉 Build và push lên Harbor thành công! Repo deploy đã được cập nhật.'
+            echo 'Pipeline executed successfully!'
         }
         failure {
-            echo '❌ Build thất bại. Kiểm tra logs để xem chi tiết.'
+            echo 'Pipeline failed!'
         }
     }
 }
+
