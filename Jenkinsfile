@@ -2,41 +2,39 @@ pipeline {
     agent any
 
     environment {
-        NODEJS_VERSION = '18'  // Đảm bảo dùng Node.js 18
+        NODE_VERSION = '18' // Phiên bản Node.js cần thiết
     }
 
     stages {
-        stage('Checkout') {
+        stage('Prepare Environment') {
             steps {
-                deleteDir()  // Xóa thư mục cũ trước khi pull code mới
-                checkout scm
-                sh 'ls -la'  // Kiểm tra file sau khi clone
+                script {
+                    // Cài đặt Node.js
+                    sh '''
+                    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+                    apt-get install -y nodejs
+                    node -v
+                    npm -v
+                    '''
+                }
             }
         }
 
-        stage('Setup Node.js') {
+        stage('Checkout Code') {
             steps {
-                script {
-                    def nodeHome = tool name: 'NodeJS_18', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    env.PATH = "${nodeHome}/bin:${env.PATH}"
-                }
-                sh 'node -v'  // Debug kiểm tra phiên bản Node.js
-                sh 'npm -v'   // Kiểm tra npm
+                // Clone repository
+                git branch: 'main',
+                    url: 'https://github.com/tierik-bjornson/pc-web-front.git'
             }
         }
 
         stage('Install Dependencies') {
-            parallel {
-                stage('Admin - Install') {
-                    steps {
-                        dir('admin') {
-                            sh 'npm install'
-                        }
-                    }
-                }
-                stage('User - Install') {
-                    steps {
-                        dir('user') {
+            steps {
+                script {
+                    // Cài đặt dependencies cho cả admin và user
+                    def modules = ['admin', 'user']
+                    for (module in modules) {
+                        dir(module) {
                             sh 'npm install'
                         }
                     }
@@ -44,77 +42,41 @@ pipeline {
             }
         }
 
-        stage('Lint Code') {
-            parallel {
-                stage('Admin - Lint') {
-                    steps {
-                        dir('admin') {
-                            sh 'npm run lint || true'  // Không fail nếu lint lỗi
-                        }
-                    }
-                }
-                stage('User - Lint') {
-                    steps {
-                        dir('user') {
-                            sh 'npm run lint || true'
+        stage('Build Projects') {
+            steps {
+                script {
+                    // Build cả admin và user
+                    def modules = ['admin', 'user']
+                    for (module in modules) {
+                        dir(module) {
+                            sh 'npm run build'
                         }
                     }
                 }
             }
         }
 
-        stage('Run Tests') {
-            parallel {
-                stage('Admin - Test') {
-                    steps {
-                        dir('admin') {
-                            sh 'npm test || true'  // Không fail nếu test lỗi
-                        }
-                    }
-                }
-                stage('User - Test') {
-                    steps {
-                        dir('user') {
-                            sh 'npm test || true'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build Project') {
-            parallel {
-                stage('Admin - Build') {
-                    steps {
-                        dir('admin') {
-                            sh 'npm run build'
-                        }
-                    }
-                }
-                stage('User - Build') {
-                    steps {
-                        dir('user') {
-                            sh 'npm run build'
-                        }
-                    }
-                }
+        stage('Archive Artifacts') {
+            steps {
+                // Lưu trữ các file build
+                archiveArtifacts artifacts: '**/dist/**', fingerprint: true
             }
         }
 
         stage('Deploy') {
             steps {
-                echo '🔄 Deploying Application...'
-                // Thêm lệnh deploy của bạn ở đây (ví dụ: copy file, chạy Docker, Kubernetes...)
+                echo 'Triển khai ứng dụng...'
+                // Thêm các bước triển khai tại đây
             }
         }
     }
 
     post {
         success {
-            echo '✅ Build thành công!'
+            echo '🎉 Build và triển khai thành công!'
         }
         failure {
-            echo '❌ Build thất bại. Kiểm tra logs!'
+            echo '❌ Build hoặc triển khai thất bại!'
         }
     }
 }
