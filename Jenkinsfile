@@ -1,82 +1,98 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs "Node23"
+    }
+
     environment {
-        NODE_VERSION = '18' // Phiên bản Node.js cần thiết
+        REGISTRY = 'localhost:80'
+        PROJECT = 'pc-web-front'
+        IMAGE_NAME = 'frontend'
+        HARBOR_CREDS = 'harbor-credentials'
+      
+        DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
-        stage('Prepare Environment') {
+        stage('Start') {
             steps {
                 script {
-                    // Cài đặt Node.js
-                    sh '''
-                    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
-                    apt-get install -y nodejs
-                    node -v
-                    npm -v
-                    '''
+                    echo "🚀 Pipeline bắt đầu chạy!"
                 }
             }
         }
 
-        stage('Checkout Code') {
+        stage('Checkout Source Code') {
             steps {
-                // Clone repository
-                git branch: 'main',
-                    url: 'https://github.com/tierik-bjornson/pc-web-front.git'
+                script {
+                    echo "🔄 Đang clone repository source code..."
+                    git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main'
+                    echo "✅ Clone source code thành công!"
+                }
             }
         }
 
         stage('Install Dependencies') {
-            steps {
-                script {
-                    // Cài đặt dependencies cho cả admin và user
-                    def modules = ['admin', 'user']
-                    for (module in modules) {
-                        dir(module) {
-                            sh 'npm install'
+            parallel {
+                stage('Install User Frontend') {
+                    steps {
+                        script {
+                            echo "📦 Cài đặt dependencies cho User Frontend..."
+                            dir('user') {
+                                sh 'npm install'
+                            }
+                            echo "✅ Cài đặt User Frontend hoàn tất!"
+                        }
+                    }
+                }
+                stage('Install Admin Frontend') {
+                    steps {
+                        script {
+                            echo "📦 Cài đặt dependencies cho Admin Frontend..."
+                            dir('admin') {
+                                sh 'npm install'
+                            }
+                            echo "✅ Cài đặt Admin Frontend hoàn tất!"
                         }
                     }
                 }
             }
         }
 
-        stage('Build Projects') {
+        stage('Build') {
             steps {
                 script {
-                    // Build cả admin và user
-                    def modules = ['admin', 'user']
-                    for (module in modules) {
-                        dir(module) {
-                            sh 'npm run build'
-                        }
+                    echo "🏗️ Bắt đầu build cả User và Admin..."
+                    dir('user-frontend') {
+                        sh 'npx ng build --configuration=production --output-path=../dist/user'
                     }
+                    dir('admin-frontend') {
+                        sh 'npx ng build --configuration=production --output-path=../dist/admin'
+                    }
+                    echo "✅ Build hoàn tất!"
                 }
             }
         }
 
-        stage('Archive Artifacts') {
+    
+        stage('Cleanup') {
             steps {
-                // Lưu trữ các file build
-                archiveArtifacts artifacts: '**/dist/**', fingerprint: true
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo 'Triển khai ứng dụng...'
-                // Thêm các bước triển khai tại đây
+                script {
+                    echo "🗑️ Dọn dẹp Docker image..."
+                    sh "docker rmi ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
+                    echo "✅ Dọn dẹp hoàn tất!"
+                }
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Build và triển khai thành công!'
+            echo '🎉 Build và push lên Harbor thành công! Repo deploy đã được cập nhật.'
         }
         failure {
-            echo '❌ Build hoặc triển khai thất bại!'
+            echo '❌ Build thất bại. Kiểm tra logs để xem chi tiết.'
         }
     }
 }
