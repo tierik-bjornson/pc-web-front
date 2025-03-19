@@ -14,79 +14,79 @@ pipeline {
         stage('Start') {
             steps {
                 script {
-                    echo "Pipeline bắt đầu chạy!"
+                    echo "🚀 Pipeline bắt đầu chạy!"
                 }
             }
         }
         stage('Checkout Source Code') {
             steps {
                 script {
-                    echo "Đang clone repository source code..."
+                    echo "📥 Đang clone repository source code..."
                     git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main'
-                    echo "Clone source code thành công!"
+                    echo "✅ Clone source code thành công!"
                 }
             }
         }
         stage('Install Dependencies') {
             steps {
                 script {
-                    def directories = ['admin', 'user']
+                    def directories = ['admin/src', 'user/src']
                     for (dir in directories) {
-                        echo "Cài đặt dependencies cho ${dir}..."
+                        echo "📦 Cài đặt dependencies cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
                                 sh 'npm install'
                             } else {
-                                echo "Không tìm thấy package.json trong thư mục ${dir}, bỏ qua bước cài đặt."
+                                echo "⚠ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua."
                             }
                         }
                     }
-                    echo "Cài đặt hoàn tất!"
+                    echo "✅ Cài đặt dependencies hoàn tất!"
                 }
             }
         }
         stage('Build') {
             steps {
                 script {
-                    def directories = ['admin', 'user']
+                    def directories = ['admin/src', 'user/src']
                     for (dir in directories) {
-                        echo "Bắt đầu build cho ${dir}..."
+                        echo "🏗 Bắt đầu build cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
                                 sh 'npm run build --prod'
                             } else {
-                                echo "Không tìm thấy package.json trong thư mục ${dir}, bỏ qua bước build."
+                                echo "⚠ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua build."
                             }
                         }
                     }
-                    echo "Build hoàn tất!"
+                    echo "✅ Build hoàn tất!"
                 }
             }
         }
         stage('Test') {
             steps {
                 script {
-                    def directories = ['admin', 'user']
+                    def directories = ['admin/src', 'user/src']
                     for (dir in directories) {
-                        echo "Chạy test cho ${dir}..."
+                        echo "🧪 Chạy test cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
-                                sh 'npm run test || echo "No tests specified, skipping..."'
+                                sh 'npm run test || echo "⚠ Không có test nào được chỉ định, bỏ qua..."'
                             } else {
-                                echo "Không tìm thấy package.json trong thư mục ${dir}, bỏ qua bước test."
+                                echo "⚠ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua test."
                             }
                         }
                     }
-                    echo "Test xong!"
+                    echo "✅ Test xong!"
                 }
             }
         }
         stage('Cleanup') {
             steps {
                 script {
-                    echo "Dọn dẹp Docker image..."
+                    echo "🧹 Dọn dẹp Docker image..."
                     sh "docker rmi ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
-                    echo "Dọn dẹp hoàn tất!"
+                    echo "✅ Dọn dẹp hoàn tất!"
                 }
             }
         }
@@ -100,6 +100,3 @@ pipeline {
         }
     }
 }
-
-
-
