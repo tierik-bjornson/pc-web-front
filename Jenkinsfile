@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Preparation') {
             steps {
-                // Sử dụng NodeJS đã cài trong Jenkins
+                echo 'Kiểm tra NodeJS environment...'
                 tool name: 'NodeJS', version: "${env.NODE_VERSION}"
                 sh 'node --version'
                 sh 'npm --version'
@@ -19,9 +19,11 @@ pipeline {
         
         stage('Checkout') {
             steps {
-                // Đảm bảo checkout code mới nhất
+                echo 'Đang checkout source code...'
                 checkout scm
-                sh 'ls -la' // Kiểm tra thư mục có admin và user không
+                echo 'Kiểm tra cấu trúc thư mục...'
+                sh 'ls -la'
+                sh 'find . -name package.json'
             }
         }
         
@@ -30,6 +32,8 @@ pipeline {
                 stage('Admin Frontend') {
                     steps {
                         dir("${env.ADMIN_PATH}") {
+                            echo 'Cài đặt dependencies cho admin...'
+                            sh 'ls -la'
                             sh 'npm install'
                         }
                     }
@@ -37,6 +41,8 @@ pipeline {
                 stage('User Frontend') {
                     steps {
                         dir("${env.USER_PATH}") {
+                            echo 'Cài đặt dependencies cho user...'
+                            sh 'ls -la'
                             sh 'npm install'
                         }
                     }
@@ -49,6 +55,7 @@ pipeline {
                 stage('Build Admin') {
                     steps {
                         dir("${env.ADMIN_PATH}") {
+                            echo 'Building admin frontend...'
                             sh 'npm run build'
                         }
                     }
@@ -56,6 +63,7 @@ pipeline {
                 stage('Build User') {
                     steps {
                         dir("${env.USER_PATH}") {
+                            echo 'Building user frontend...'
                             sh 'npm run build'
                         }
                     }
@@ -68,11 +76,11 @@ pipeline {
                 echo 'Deploying applications...'
                 dir("${env.ADMIN_PATH}/dist") {
                     echo 'Deploying admin frontend...'
-                    // Ví dụ: sh 'aws s3 sync . s3://your-admin-bucket --region your-region'
+                    // Thêm lệnh deploy thực tế, ví dụ: sh 'aws s3 sync . s3://admin-bucket'
                 }
                 dir("${env.USER_PATH}/dist") {
                     echo 'Deploying user frontend...'
-                    // Ví dụ: sh 'aws s3 sync . s3://your-user-bucket --region your-region'
+                    // Thêm lệnh deploy thực tế, ví dụ: sh 'aws s3 sync . s3://user-bucket'
                 }
             }
         }
