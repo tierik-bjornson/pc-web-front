@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     environment {
-        // Sử dụng Node 18 đã cài trong Jenkins
         NODE_VERSION = '18'
         ADMIN_PATH = 'admin'
         USER_PATH = 'user'
@@ -15,6 +14,14 @@ pipeline {
                 tool name: 'NodeJS', version: "${env.NODE_VERSION}"
                 sh 'node --version'
                 sh 'npm --version'
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
+                // Đảm bảo checkout code mới nhất
+                checkout scm
+                sh 'ls -la' // Kiểm tra thư mục có admin và user không
             }
         }
         
@@ -59,19 +66,13 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying applications...'
-                
-                // Deploy admin
                 dir("${env.ADMIN_PATH}/dist") {
-                    // Ví dụ: deploy lên S3 hoặc server
-                    // sh 'aws s3 sync . s3://your-admin-bucket --region your-region'
                     echo 'Deploying admin frontend...'
+                    // Ví dụ: sh 'aws s3 sync . s3://your-admin-bucket --region your-region'
                 }
-                
-                // Deploy user
                 dir("${env.USER_PATH}/dist") {
-                    // Ví dụ: deploy lên S3 hoặc server
-                    // sh 'aws s3 sync . s3://your-user-bucket --region your-region'
                     echo 'Deploying user frontend...'
+                    // Ví dụ: sh 'aws s3 sync . s3://your-user-bucket --region your-region'
                 }
             }
         }
@@ -79,10 +80,10 @@ pipeline {
     
     post {
         success {
-            echo 'Build and deployment completed successfully!'
+            echo '✅ Build và deployment hoàn tất thành công!'
         }
         failure {
-            echo 'Build failed!'
+            echo '❌ Build thất bại! Kiểm tra logs để biết chi tiết.'
         }
         always {
             cleanWs()
