@@ -10,6 +10,7 @@ pipeline {
             steps {
                 script {
                     checkout scm
+                    sh 'ls -la'  // Kiểm tra thư mục sau khi clone
                 }
             }
         }
@@ -22,7 +23,7 @@ pipeline {
                     sh "node -v"
                     sh "npm -v"
 
-                    // Cài đặt Angular CLI đúng version
+                    // Cài Angular CLI đúng version
                     sh "npm install -g @angular/cli@12"
                     sh "ng version"
                 }
@@ -34,6 +35,7 @@ pipeline {
                 stage('Install Admin') {
                     steps {
                         dir('admin') {
+                            sh 'ls -la'  // Kiểm tra package.json có tồn tại không
                             sh 'npm install --legacy-peer-deps'
                         }
                     }
@@ -41,6 +43,7 @@ pipeline {
                 stage('Install User') {
                     steps {
                         dir('user') {
+                            sh 'ls -la'  // Kiểm tra package.json có tồn tại không
                             sh 'npm install --legacy-peer-deps'
                         }
                     }
@@ -89,17 +92,17 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying Angular Apps...'
-                // Cấu hình deploy tùy vào hệ thống của bạn
+                // Thêm lệnh deploy tại đây (nếu cần)
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline executed successfully! 🎉'
+            echo '✅ Pipeline executed successfully! 🎉'
         }
         failure {
-            echo 'Pipeline failed! ❌'
+            echo '❌ Pipeline failed! Debug logs needed.'
         }
     }
 }
