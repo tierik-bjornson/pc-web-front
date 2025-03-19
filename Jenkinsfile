@@ -23,7 +23,18 @@ pipeline {
                 script {
                     echo "🔄 Đang clone repository source code..."
                     git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main', depth: 1
+                    sh 'ls -la'
                     echo "✅ Clone source code thành công!"
+                }
+            }
+        }
+        stage('Check Directories') {
+            steps {
+                script {
+                    echo "📂 Kiểm tra thư mục..."
+                    sh 'ls -la'
+                    sh 'ls -la admin || echo "⚠️ Thư mục admin không tồn tại!"'
+                    sh 'ls -la user || echo "⚠️ Thư mục user không tồn tại!"'
                 }
             }
         }
@@ -69,29 +80,7 @@ pipeline {
                 }
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    echo "🐳 Build Docker image..."
-                    sh """
-                    docker build -t ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
-                    """
-                    echo "✅ Build Docker image hoàn tất!"
-                }
-            }
-        }
-        stage('Push Image to Harbor') {
-            steps {
-                script {
-                    echo "📤 Push image lên Harbor..."
-                    sh """
-                    docker login ${REGISTRY} -u admin -p password
-                    docker push ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-                    """
-                    echo "✅ Push image thành công!"
-                }
-            }
-        }
+      
         stage('Cleanup') {
             steps {
                 script {
@@ -111,3 +100,4 @@ pipeline {
         }
     }
 }
+
