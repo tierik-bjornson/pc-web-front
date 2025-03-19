@@ -2,68 +2,61 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '18'
+        NODEJS_VERSION = '18'  // Đảm bảo dùng Node.js 18
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                script {
-                    checkout scm
-                    sh 'ls -la'  // Kiểm tra thư mục sau khi clone
-                }
+                deleteDir()  // Xóa thư mục cũ trước khi pull code mới
+                checkout scm
+                sh 'ls -la'  // Kiểm tra file sau khi clone
             }
         }
 
-        stage('Setup Node.js & Angular') {
+        stage('Setup Node.js') {
             steps {
                 script {
-                    sh "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
-                    sh "sudo apt-get install -y nodejs"
-                    sh "node -v"
-                    sh "npm -v"
-
-                    // Cài Angular CLI đúng version
-                    sh "npm install -g @angular/cli@12"
-                    sh "ng version"
+                    def nodeHome = tool name: 'NodeJS_18', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    env.PATH = "${nodeHome}/bin:${env.PATH}"
                 }
+                sh 'node -v'  // Debug kiểm tra phiên bản Node.js
+                sh 'npm -v'   // Kiểm tra npm
             }
         }
 
         stage('Install Dependencies') {
             parallel {
-                stage('Install Admin') {
+                stage('Admin - Install') {
                     steps {
                         dir('admin') {
-                            sh 'ls -la'  // Kiểm tra package.json có tồn tại không
-                            sh 'npm install --legacy-peer-deps'
+                            sh 'npm install'
                         }
                     }
                 }
-                stage('Install User') {
+                stage('User - Install') {
                     steps {
                         dir('user') {
-                            sh 'ls -la'  // Kiểm tra package.json có tồn tại không
-                            sh 'npm install --legacy-peer-deps'
+                            sh 'npm install'
                         }
                     }
                 }
             }
         }
 
-        stage('Build Angular Apps') {
+        stage('Lint Code') {
             parallel {
-                stage('Build Admin') {
+                stage('Admin - Lint') {
                     steps {
                         dir('admin') {
-                            sh 'ng build --configuration production'
+                            sh 'npm run lint || true'  // Không fail nếu lint lỗi
                         }
                     }
                 }
-                stage('Build User') {
+                stage('User - Lint') {
                     steps {
                         dir('user') {
-                            sh 'ng build --configuration production'
+                            sh 'npm run lint || true'
                         }
                     }
                 }
@@ -72,17 +65,36 @@ pipeline {
 
         stage('Run Tests') {
             parallel {
-                stage('Test Admin') {
+                stage('Admin - Test') {
                     steps {
                         dir('admin') {
-                            sh 'ng test --watch=false --browsers=ChromeHeadless || true'
+                            sh 'npm test || true'  // Không fail nếu test lỗi
                         }
                     }
                 }
-                stage('Test User') {
+                stage('User - Test') {
                     steps {
                         dir('user') {
-                            sh 'ng test --watch=false --browsers=ChromeHeadless || true'
+                            sh 'npm test || true'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Project') {
+            parallel {
+                stage('Admin - Build') {
+                    steps {
+                        dir('admin') {
+                            sh 'npm run build'
+                        }
+                    }
+                }
+                stage('User - Build') {
+                    steps {
+                        dir('user') {
+                            sh 'npm run build'
                         }
                     }
                 }
@@ -91,18 +103,18 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'Deploying Angular Apps...'
-                // Thêm lệnh deploy tại đây (nếu cần)
+                echo '🔄 Deploying Application...'
+                // Thêm lệnh deploy của bạn ở đây (ví dụ: copy file, chạy Docker, Kubernetes...)
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline executed successfully! 🎉'
+            echo '✅ Build thành công!'
         }
         failure {
-            echo '❌ Pipeline failed! Debug logs needed.'
+            echo '❌ Build thất bại. Kiểm tra logs!'
         }
     }
 }
