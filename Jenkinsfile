@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     tools {
-        nodejs 'Node18' // Sử dụng node18 đã cài trong Jenkins
+        nodejs 'Node18' 
     }
     
     environment {
