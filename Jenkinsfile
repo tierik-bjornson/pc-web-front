@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '14' // Angular 12 hoạt động tốt với Node.js 14
+        NODE_VERSION = '18' // Đổi sang Node.js 18 như bạn yêu cầu
     }
 
     stages {
@@ -17,11 +17,10 @@ pipeline {
         stage('Setup Node.js') {
             steps {
                 script {
-                    def nodeInstalled = sh(script: 'node -v || echo "not installed"', returnStdout: true).trim()
-                    if (nodeInstalled == "not installed") {
-                        sh "nvm install ${NODE_VERSION}"
-                        sh "nvm use ${NODE_VERSION}"
-                    }
+                    sh "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -"
+                    sh "apt-get install -y nodejs"
+                    sh "node -v"
+                    sh "npm -v"
                 }
             }
         }
