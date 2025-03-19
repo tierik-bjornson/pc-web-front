@@ -14,116 +14,79 @@ pipeline {
         stage('Start') {
             steps {
                 script {
-                    echo "🚀 Pipeline bắt đầu chạy!"
+                    echo "Pipeline bắt đầu chạy!"
                 }
             }
         }
         stage('Checkout Source Code') {
             steps {
                 script {
-                    echo "🔄 Đang clone repository source code..."
-                    git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main', depth: 1
-                    echo "✅ Clone source code thành công!"
-                }
-            }
-        }
-        stage('Check Files') {
-            steps {
-                script {
-                    echo "📂 Kiểm tra thư mục sau khi clone:"
-                    sh 'ls -la'
-                    sh 'find . -name package.json || echo "⚠️ Không tìm thấy package.json!"'
+                    echo "Đang clone repository source code..."
+                    git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main'
+                    echo "Clone source code thành công!"
                 }
             }
         }
         stage('Install Dependencies') {
             steps {
                 script {
-                    echo "📦 Cài đặt dependencies..."
-                    if (fileExists('admin/package.json')) {
-                        dir('admin') {
-                            sh 'npm install'
+                    def directories = ['admin', 'user']
+                    for (dir in directories) {
+                        echo "Cài đặt dependencies cho ${dir}..."
+                        dir("${dir}") {
+                            if (fileExists('package.json')) {
+                                sh 'npm install'
+                            } else {
+                                echo "Không tìm thấy package.json trong thư mục ${dir}, bỏ qua bước cài đặt."
+                            }
                         }
-                    } else {
-                        echo "⚠️ Không tìm thấy package.json trong admin!"
                     }
-
-                    if (fileExists('user/package.json')) {
-                        dir('user') {
-                            sh 'npm install'
-                        }
-                    } else {
-                        echo "⚠️ Không tìm thấy package.json trong user!"
-                    }
-                    echo "✅ Cài đặt hoàn tất!"
+                    echo "Cài đặt hoàn tất!"
                 }
             }
         }
         stage('Build') {
             steps {
                 script {
-                    echo "🛠 Bắt đầu build..."
-                    if (fileExists('admin/package.json')) {
-                        dir('admin') {
-                            sh 'npm run build --prod'
+                    def directories = ['admin', 'user']
+                    for (dir in directories) {
+                        echo "Bắt đầu build cho ${dir}..."
+                        dir("${dir}") {
+                            if (fileExists('package.json')) {
+                                sh 'npm run build --prod'
+                            } else {
+                                echo "Không tìm thấy package.json trong thư mục ${dir}, bỏ qua bước build."
+                            }
                         }
                     }
-                    if (fileExists('user/package.json')) {
-                        dir('user') {
-                            sh 'npm run build --prod'
-                        }
-                    }
-                    echo "✅ Build hoàn tất!"
+                    echo "Build hoàn tất!"
                 }
             }
         }
         stage('Test') {
             steps {
                 script {
-                    echo "🧪 Chạy test..."
-                    if (fileExists('admin/package.json')) {
-                        dir('admin') {
-                            sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
+                    def directories = ['admin', 'user']
+                    for (dir in directories) {
+                        echo "Chạy test cho ${dir}..."
+                        dir("${dir}") {
+                            if (fileExists('package.json')) {
+                                sh 'npm run test || echo "No tests specified, skipping..."'
+                            } else {
+                                echo "Không tìm thấy package.json trong thư mục ${dir}, bỏ qua bước test."
+                            }
                         }
                     }
-                    if (fileExists('user/package.json')) {
-                        dir('user') {
-                            sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
-                        }
-                    }
-                    echo "✅ Test xong!"
-                }
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    echo "🐳 Build Docker image..."
-                    sh """
-                    docker build -t ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
-                    """
-                    echo "✅ Build Docker image hoàn tất!"
-                }
-            }
-        }
-        stage('Push Image to Harbor') {
-            steps {
-                script {
-                    echo "📤 Push image lên Harbor..."
-                    sh """
-                    docker login ${REGISTRY} -u admin -p password
-                    docker push ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-                    """
-                    echo "✅ Push image thành công!"
+                    echo "Test xong!"
                 }
             }
         }
         stage('Cleanup') {
             steps {
                 script {
-                    echo "🧹 Dọn dẹp Docker image..."
+                    echo "Dọn dẹp Docker image..."
                     sh "docker rmi ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
-                    echo "✅ Dọn dẹp hoàn tất!"
+                    echo "Dọn dẹp hoàn tất!"
                 }
             }
         }
@@ -137,5 +100,6 @@ pipeline {
         }
     }
 }
+
 
 
