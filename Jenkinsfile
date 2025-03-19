@@ -23,18 +23,16 @@ pipeline {
                 script {
                     echo "🔄 Đang clone repository source code..."
                     git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main', depth: 1
-                    sh 'ls -la'
                     echo "✅ Clone source code thành công!"
                 }
             }
         }
-        stage('Check Directories') {
+        stage('Check Files') {
             steps {
                 script {
-                    echo "📂 Kiểm tra thư mục..."
+                    echo "📂 Kiểm tra thư mục sau khi clone:"
                     sh 'ls -la'
-                    sh 'ls -la admin || echo "⚠️ Thư mục admin không tồn tại!"'
-                    sh 'ls -la user || echo "⚠️ Thư mục user không tồn tại!"'
+                    sh 'find . -name package.json || echo "⚠️ Không tìm thấy package.json!"'
                 }
             }
         }
@@ -42,11 +40,20 @@ pipeline {
             steps {
                 script {
                     echo "📦 Cài đặt dependencies..."
-                    dir('admin') {
-                        sh 'ls -la && npm install'
+                    if (fileExists('admin/package.json')) {
+                        dir('admin') {
+                            sh 'npm install'
+                        }
+                    } else {
+                        echo "⚠️ Không tìm thấy package.json trong admin!"
                     }
-                    dir('user') {
-                        sh 'ls -la && npm install'
+
+                    if (fileExists('user/package.json')) {
+                        dir('user') {
+                            sh 'npm install'
+                        }
+                    } else {
+                        echo "⚠️ Không tìm thấy package.json trong user!"
                     }
                     echo "✅ Cài đặt hoàn tất!"
                 }
@@ -56,11 +63,15 @@ pipeline {
             steps {
                 script {
                     echo "🛠 Bắt đầu build..."
-                    dir('admin') {
-                        sh 'npm run build --prod'
+                    if (fileExists('admin/package.json')) {
+                        dir('admin') {
+                            sh 'npm run build --prod'
+                        }
                     }
-                    dir('user') {
-                        sh 'npm run build --prod'
+                    if (fileExists('user/package.json')) {
+                        dir('user') {
+                            sh 'npm run build --prod'
+                        }
                     }
                     echo "✅ Build hoàn tất!"
                 }
@@ -70,17 +81,43 @@ pipeline {
             steps {
                 script {
                     echo "🧪 Chạy test..."
-                    dir('admin') {
-                        sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
+                    if (fileExists('admin/package.json')) {
+                        dir('admin') {
+                            sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
+                        }
                     }
-                    dir('user') {
-                        sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
+                    if (fileExists('user/package.json')) {
+                        dir('user') {
+                            sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
+                        }
                     }
                     echo "✅ Test xong!"
                 }
             }
         }
-      
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "🐳 Build Docker image..."
+                    sh """
+                    docker build -t ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
+                    """
+                    echo "✅ Build Docker image hoàn tất!"
+                }
+            }
+        }
+        stage('Push Image to Harbor') {
+            steps {
+                script {
+                    echo "📤 Push image lên Harbor..."
+                    sh """
+                    docker login ${REGISTRY} -u admin -p password
+                    docker push ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                    """
+                    echo "✅ Push image thành công!"
+                }
+            }
+        }
         stage('Cleanup') {
             steps {
                 script {
@@ -100,4 +137,5 @@ pipeline {
         }
     }
 }
+
 
