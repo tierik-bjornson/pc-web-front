@@ -24,20 +24,31 @@ pipeline {
                     echo "📥 Đang clone repository source code..."
                     git url: 'https://github.com/tierik-bjornson/pc-web-front.git', branch: 'main'
                     echo "✅ Clone source code thành công!"
+                    
+                    // Kiểm tra thư mục sau khi clone
+                    sh 'ls -la'
+                }
+            }
+        }
+        stage('Check package.json') {
+            steps {
+                script {
+                    echo "🔍 Kiểm tra package.json..."
+                    sh 'find . -name package.json || echo "❌ Không tìm thấy package.json"'
                 }
             }
         }
         stage('Install Dependencies') {
             steps {
                 script {
-                    def directories = ['admin/src', 'user/src']
+                    def directories = ['admin', 'user']
                     for (dir in directories) {
+                        echo "📦 Cài đặt dependencies cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
-                                echo "📦 Cài đặt dependencies trong ${dir}..."
                                 sh 'npm install'
                             } else {
-                                echo "⚠ Không tìm thấy package.json trong ${dir}, bỏ qua cài đặt."
+                                echo "❌ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua!"
                             }
                         }
                     }
@@ -48,14 +59,14 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def directories = ['admin/src', 'user/src']
+                    def directories = ['admin', 'user']
                     for (dir in directories) {
+                        echo "🛠️ Bắt đầu build cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
-                                echo "🏗 Build dự án trong ${dir}..."
                                 sh 'npm run build --prod'
                             } else {
-                                echo "⚠ Không tìm thấy package.json trong ${dir}, bỏ qua build."
+                                echo "❌ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua build!"
                             }
                         }
                     }
@@ -66,14 +77,14 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    def directories = ['admin/src', 'user/src']
+                    def directories = ['admin', 'user']
                     for (dir in directories) {
+                        echo "🧪 Chạy test cho ${dir}..."
                         dir("${dir}") {
                             if (fileExists('package.json')) {
-                                echo "🧪 Chạy test trong ${dir}..."
-                                sh 'npm run test || echo "⚠ Không có test nào, bỏ qua..."'
+                                sh 'npm run test || echo "⚠️ No tests specified, skipping..."'
                             } else {
-                                echo "⚠ Không tìm thấy package.json trong ${dir}, bỏ qua test."
+                                echo "❌ Không tìm thấy package.json trong thư mục ${dir}, bỏ qua test!"
                             }
                         }
                     }
@@ -84,7 +95,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    echo "🧹 Dọn dẹp Docker image..."
+                    echo "🗑️ Dọn dẹp Docker image..."
                     sh "docker rmi ${REGISTRY}/${PROJECT}/${IMAGE_NAME}:${DOCKER_IMAGE_TAG} || true"
                     echo "✅ Dọn dẹp hoàn tất!"
                 }
@@ -93,7 +104,7 @@ pipeline {
     }
     post {
         success {
-            echo '🎉 Build và push lên Harbor thành công!'
+            echo '🎉 Build và push lên Harbor thành công! Repo deploy đã được cập nhật.'
         }
         failure {
             echo '❌ Build thất bại. Kiểm tra logs để xem chi tiết.'
