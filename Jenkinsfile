@@ -33,8 +33,9 @@ pipeline {
         stage('Check package.json') {
             steps {
                 script {
-                    echo "🔍 Kiểm tra package.json..."
-                    sh 'find . -name package.json || echo "❌ Không tìm thấy package.json"'
+                    echo "🔍 Kiểm tra package.json trong admin và user..."
+                    sh 'ls -la admin/ | grep package.json || echo "❌ Không tìm thấy package.json trong admin"'
+                    sh 'ls -la user/ | grep package.json || echo "❌ Không tìm thấy package.json trong user"'
                 }
             }
         }
