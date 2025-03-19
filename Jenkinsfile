@@ -31,8 +31,14 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    echo "Cài đặt dependencies..."
-                    sh 'npm install'
+                    echo "Cài đặt dependencies cho admin..."
+                    dir('admin') {
+                        sh 'npm install'
+                    }
+                    echo "Cài đặt dependencies cho user..."
+                    dir('user') {
+                         sh 'npm install'
+                    }
                     echo "Cài đặt hoàn tất!"
                 }
             }
