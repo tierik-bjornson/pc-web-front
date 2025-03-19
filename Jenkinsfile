@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '18' // Đổi sang Node.js 18 như bạn yêu cầu
+        NODE_VERSION = '18'
     }
 
     stages {
@@ -17,8 +17,8 @@ pipeline {
         stage('Setup Node.js') {
             steps {
                 script {
-                    sh "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -"
-                    sh "apt-get install -y nodejs"
+                    sh "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+                    sh "sudo apt-get install -y nodejs"
                     sh "node -v"
                     sh "npm -v"
                 }
@@ -30,14 +30,14 @@ pipeline {
                 stage('Install Admin') {
                     steps {
                         dir('admin') {
-                            sh 'npm ci'
+                            sh 'npm install'
                         }
                     }
                 }
                 stage('Install User') {
                     steps {
                         dir('user') {
-                            sh 'npm ci'
+                            sh 'npm install'
                         }
                     }
                 }
@@ -49,14 +49,14 @@ pipeline {
                 stage('Build Admin') {
                     steps {
                         dir('admin') {
-                            sh 'npm run build -- --configuration production --output-path=dist/admin'
+                            sh 'npm run build -- --configuration production'
                         }
                     }
                 }
                 stage('Build User') {
                     steps {
                         dir('user') {
-                            sh 'npm run build -- --configuration production --output-path=dist/user'
+                            sh 'npm run build -- --configuration production'
                         }
                     }
                 }
@@ -85,9 +85,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying Angular Apps...'
-                // Thêm lệnh deploy thực tế nếu cần, ví dụ:
-                // scp -r admin/dist/admin user@server:/var/www/admin
-                // scp -r user/dist/user user@server:/var/www/user
+                // Ví dụ: scp hoặc rsync
+                // sh 'scp -r admin/dist user@server:/var/www/admin'
+                // sh 'scp -r user/dist user@server:/var/www/user'
             }
         }
     }
