@@ -13,9 +13,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Đang checkout source code...'
+                echo 'Đang checkout source code........'
                 checkout scm
-                echo 'Kiểm tra cấu trúc thư mục..'
+                echo 'Kiểm tra cấu trúc thư mục........'
                 sh 'ls -la'
                 sh 'find . -name package.json'
             }
