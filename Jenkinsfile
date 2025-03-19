@@ -1,23 +1,16 @@
 pipeline {
     agent any
     
+    tools {
+        nodejs 'Node18' // Sử dụng node18 đã cài trong Jenkins
+    }
+    
     environment {
-        NODE_VERSION = '18' // Chỉ để tham khảo
         ADMIN_PATH = 'admin'
         USER_PATH = 'user'
     }
     
     stages {
-        stage('Preparation') {
-            steps {
-                echo 'Kiểm tra NodeJS environment...'
-                // Sử dụng tên 'node18' đã cấu hình trong Jenkins
-                tool name: 'Node18'
-                sh 'node --version'
-                sh 'npm --version'
-            }
-        }
-        
         stage('Checkout') {
             steps {
                 echo 'Đang checkout source code...'
@@ -77,9 +70,11 @@ pipeline {
                 echo 'Deploying applications...'
                 dir("${env.ADMIN_PATH}/dist") {
                     echo 'Deploying admin frontend...'
+                    // Ví dụ: sh 'aws s3 sync . s3://admin-bucket'
                 }
                 dir("${env.USER_PATH}/dist") {
                     echo 'Deploying user frontend...'
+                    // Ví dụ: sh 'aws s3 sync . s3://user-bucket'
                 }
             }
         }
@@ -87,7 +82,7 @@ pipeline {
     
     post {
         success {
-            echo '✅ Build và deployment hoàn tất thành công!'
+            echo '✅ Build hoàn tất thành công!'
         }
         failure {
             echo '❌ Build thất bại! Kiểm tra logs để biết chi tiết.'
